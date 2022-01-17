@@ -1,57 +1,51 @@
 const fs = require('fs');
 const filePath = process.platform === 'linux' ? '/dev/stdin' : './input.txt';
 let input = fs.readFileSync(filePath).toString().trim().split('\n');
-const lengths = [];
-const lands = [];
-let land = [];
-let count = 0;
-for (i = 0; i < input.length; i++) {
-  if (count) {
-    const landRow = input[i].split(' ').map(v => +v);
-    land.push(landRow);
-    count--;
-  } else {
-    lands.push(land);
-    land = [];
-    const length = input[i].split(' ').map(v => +v);
-    lengths.push(length)
-    count = length[1];
+const [width, height] = input[0].split(' ').map(v => +v);
+const matrix = input.slice(1).map(v => v.split(' ').map(v => +v));
+const queue = [];
+for (let y = 0; y < height; y++) {
+  for (let x = 0; x < width; x++) {
+    if (matrix[y][x] === 1) queue.push([y, x]);
   }
 }
-lengths.pop();
-lands.shift();
 
-const sol = (length, land) => {
-  const [width, height] = length;
+const sol = (width, height, matrix, queue) => {
+  let day = 0;
+  const dx = [0, 0, 1, -1];
+  const dy = [1, -1, 0, 0];
   let count = 0;
-  let dx = [0, 0, 1, -1, -1, 1, -1, 1];
-  let dy = [1, -1, 0, 0, -1, 1, 1, -1];
+  let head = 0;
+  let tail = queue.length;
 
   const checkRange = (y, x) => {
-    if (x >= 0 && y >= 0 && x < width && y < height) return true;
+    if (y >= 0 && x >= 0 && y < height && x < width) return true;
+    else return false;
   };
 
-  const DFS = (y, x) => {
-    if (checkRange(y, x) && land[y][x]) {
-      land[y][x] = 0;
-      for (let i = 0; i < 8; i++) {
-        DFS(y + dy[i], x + dx[i]);
+  while (head !== tail) {
+    for (let i = head; i < tail; i++) {
+      const [y, x] = queue[i];
+      for (let j = 0; j < 4; j++) {
+        const nx = x + dx[j];
+        const ny = y + dy[j];
+
+        if (checkRange(ny, nx) && !matrix[ny][nx]) {
+          matrix[ny][nx] = 1;
+          queue.push([ny, nx]);
+        }
       }
     }
-  };
-
+    head = tail;
+    tail = queue.length;
+    day++;
+  }
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (land[y][x] === 1) {
-        DFS(y, x);
-        count++;
-      }
+      if (!matrix[y][x]) return -1;
     }
   }
-
-  return count;
+  return day - 1;
 };
 
-for (let i = 0; i < lengths.length; i++) {
-  console.log(sol(lengths[i], lands[i]));
-}
+console.log(sol(width, height, matrix, queue));
